@@ -1,0 +1,47 @@
+---
+title: "<center> <h1> **DMSG-MSFP Essen** </h1> </center>"
+
+#date: "null"
+output:
+  html_document:
+    code_download: false
+theme: lumen
+runtime: shiny
+---
+
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  color: #26ae93;
+}
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(shinyjs)
+library(plotly)
+library(kableExtra)
+library(DT)  
+library(factoextra)
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color, 
+      x)
+  } else x
+}
+```
+
+#  {.tabset}
+
+	
+
+**`r colorize("Das heutige Mittagessen würde von", "#26ae93")`**
+```{r echo=FALSE}
+Sys.time()
+renderPrint(
+sample (c( "Doner restaurant", "Asian", "Burgerme", "Dukes", "Koh-I-Noor Dhaba Indischer Imbiss", "Smileys"),prob=c(rep(0.5, 6)), size = 1)
+)
+```
