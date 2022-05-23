@@ -1,0 +1,307 @@
+---
+title: "Grand Mean Comparison"
+runtime: shiny
+output: 
+  html_document: 
+    code_download: false
+    toc: true
+    toc_float: true
+    theme: cerulean
+    highlight: kate
+mainfont: Arial
+fontsize: 11pt
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+  if (!require("DT")) install.packages("DT")
+library(shiny)
+library(shinyjs)
+library(plotly)
+
+binomial_outcome_table <- function(x, y, group,  df){
+
+  if (!require("arm")) install.packages("arm")
+  if (!require("tidyverse")) install.packages("tidyverse")
+  if (!require("multcomp")) install.packages("multcomp")
+  library(multcomp)
+  library(arm)
+  library(tidyverse)
+
+  df <- df %>% rename(x=x, y=y, group=group)
+
+
+  fitGLM <- bayesglm(cbind(x, y) ~ group , data=df, family=binomial)
+  #print(fitGLM)
+  compTukeyGLM <- glht(fitGLM, mcp(group="GrandMean"))
+
+  s_GLM_GM <- summary(compTukeyGLM)
+  s_pvalues_GLM <- s_GLM_GM$test$pvalues
+
+  CI_GLM_GM<-  confint(summary(compTukeyGLM))
+  CI_GLM_GM<-  as.data.frame(CI_GLM_GM$confint)
+  compnames_GLM_GM <- names(s_GLM_GM$test$coefficients)
+
+
+  tstres_GLM_GM <- data.frame(group=compnames_GLM_GM, pvalues=s_pvalues_GLM, CI_lower=CI_GLM_GM$lwr, Estimate=CI_GLM_GM$Estimate,CI_up=CI_GLM_GM$upr)
+
+  tstres_GLM_GM$comb <- paste(round(tstres_GLM_GM$pvalues, digits = 3), 
+                              paste(round(tstres_GLM_GM$CI_lower, digits = 2),
+                               paste(",", paste0(round(tstres_GLM_GM$CI_up, digits = 2),
+                               paste(")", sep=)))), sep = "(")
+
+  #print(df)
+  #print(tstres_GLM_GM)
+  REF <- group
+  ss_ae <- tstres_GLM_GM %>% left_join(df, by="group") %>% dplyr::select(-comb) %>%
+    mutate(x=as.character(x), y=as.character(y),pvalues=as.character(round(pvalues, digits = 2))) %>%
+    add_row(group = group, Estimate=NA, CI_lower=NA,  CI_up=NA, pvalues= "P.val", x =x,  y=y )  %>%
+    mutate(group=as.factor(group)) %>%  mutate(group= forcats::fct_relevel(group, REF, after = Inf))
+  print(ss_ae)
+lastrownumber <- nrow(ss_ae)
+return(ss_ae[-lastrownumber,])
+}
+
+
+
+binomial_outcome <- function(x, y, group,  df){
+
+  if (!require("arm")) install.packages("arm")
+  if (!require("tidyverse")) install.packages("tidyverse")
+  if (!require("multcomp")) install.packages("multcomp")
+  library(multcomp)
+  library(arm)
+  library(tidyverse)
+
+  df <- df %>% rename(x=x, y=y, group=group)
+
+
+  fitGLM <- bayesglm(cbind(x, y) ~ group , data=df, family=binomial)
+  #print(fitGLM)
+  compTukeyGLM <- glht(fitGLM, mcp(group="GrandMean"))
+
+  s_GLM_GM <- summary(compTukeyGLM)
+  s_pvalues_GLM <- s_GLM_GM$test$pvalues
+
+  CI_GLM_GM<-  confint(summary(compTukeyGLM))
+  CI_GLM_GM<-  as.data.frame(CI_GLM_GM$confint)
+  compnames_GLM_GM <- names(s_GLM_GM$test$coefficients)
+
+
+  tstres_GLM_GM <- data.frame(group=compnames_GLM_GM, pvalues=s_pvalues_GLM, CI_lower=CI_GLM_GM$lwr, Estimate=CI_GLM_GM$Estimate,CI_up=CI_GLM_GM$upr)
+
+  tstres_GLM_GM$comb <- paste(round(tstres_GLM_GM$pvalues, digits = 3), paste(round(tstres_GLM_GM$CI_lower, digits = 2),
+                                                                              paste(",", paste0(round(tstres_GLM_GM$CI_up, digits = 2),
+                                                                                                paste(")", sep=)))), sep = "(")
+
+  #print(df)
+  #print(tstres_GLM_GM)
+  REF <- group
+  ss_ae <- tstres_GLM_GM %>% left_join(df, by="group") %>% dplyr::select(-comb) %>%
+    mutate(x=as.character(x), y=as.character(y),pvalues=as.character(round(pvalues, digits = 2))) %>%add_row(group = group, Estimate=NA, CI_lower=NA,  CI_up=NA, pvalues= "P.val", x =x,  y=y )  %>%
+    mutate(group=as.factor(group)) %>%  mutate(group= forcats::fct_relevel(group, REF, after = Inf))
+  print(ss_ae)
+
+
+
+
+  g1 <- ggplot(ss_ae, aes(x = Estimate, xmin = as.numeric(CI_lower),
+                          xmax = as.numeric(CI_up), y = group)) + geom_point(
+                            shape = 22, fill = "darkblue") + geom_errorbarh(height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "longdash", colour = "black") +
+    #scale_x_continuous(trans = "log10", breaks = breaks) +
+    #xlab("Odds Ratio (95%-KI)") +
+    theme_classic(14) +
+    theme(#axis.title.x = element_text(),
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.line.y = element_blank(),
+      axis.ticks.y = element_blank(), legend.position = "none")+xlab("")
+ # print(g1)
+  title_text_size = 18
+  table_text_size = 5
+
+  column_space = c(-0.47, -0.465, -0.46, -0.455)
+  plot_opts = NULL; table_opts = NULL
+
+  t1 <-  ggplot(ss_ae, aes(x = as.numeric(Estimate), y = group)) +
+    annotate("text", x = column_space[1], y = ss_ae$group,
+             label = ss_ae[, 1], hjust = 0, size = table_text_size) +
+    annotate("text", x = column_space[2], y = ss_ae$group,
+             label = ss_ae[, 6], hjust = 1, size = table_text_size) +
+
+    annotate("text", x = column_space[3], y =ss_ae$group,
+             label = ss_ae[, 7], hjust = 1, size = table_text_size) +
+
+    annotate("text", x = column_space[4], y =ss_ae$group,
+             label = ss_ae[, 2], hjust = 1, size = table_text_size) +
+
+    theme_classic(14) + theme(axis.title.x = element_text(colour = "white"),
+                              axis.text.x = element_text(colour = "white"), axis.title.y = element_blank(),
+                              axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+                              line = element_blank())
+
+  # annotate("text", x = -0.459550,  y=28, label ="Number of adverse events", hjust = 1, size = table_text_size)
+
+  g1 = g1 + plot_opts
+  t1 = t1 + table_opts
+
+out<-   gridExtra::grid.arrange(t1, g1, ncol = 2, widths = c(3, 2)#,top = grid::textGrob(paste(group, paste(x, paste0(y))), x = 0.02, y = 0.2, gp = grid::gpar(fontsize = title_text_size), just = "left")
+  )
+ 
+  #out <- subplot(t1, g1, widths = c(0.7, 0.3))
+   return(out)
+}
+
+```
+
+
+
+
+
+# **Import Data** 
+```{r eruptions, echo=FALSE}
+
+
+dat_ex <- data.frame(Centers=factor(paste0(rep(c("A", "B", "C", "D", "E"), 1), rep(1:3, 1))),
+                 available=rep(rbinom(5, size = 20, prob = 0.2), 1), missing=c(rep(rbinom(4, size = 20, prob = 0.3), 1),
+                                                                               rep(rbinom(1, size = 90, prob = 0.9), 1) ) )
+
+  sidebarLayout(
+            sidebarPanel(
+                fileInput("file1", "Choose CSV File"
+                         # , accept = c(
+                         #      "text/csv",
+                         #      "text/comma-separated-values,text/plain",
+                         #      ".csv")
+                )
+                ,
+                tags$hr(),
+               # checkboxInput("header", "Header", TRUE)
+          ),
+            mainPanel(
+                tableOutput("data")
+            )
+       )
+
+   dat <- reactive({
+            # input$file1 will be NULL initially. After the user selects
+            # and uploads a file, it will be a data frame with 'name',
+            # 'size', 'type', and 'datapath' columns. The 'datapath'
+            # column will contain the local filenames where the data can
+            # be found.
+            inFile <- input$file1
+
+            if (is.null(inFile))
+                return(NULL)
+
+            read.csv(inFile$datapath,  row.names=FALSE)
+        })
+
+
+
+
+
+  dat <- reactive({
+     inFile <- input$file1
+    if(is.null(inFile)){
+      
+   dat_ex
+      
+    } else{
+      
+         read.csv(inFile$datapath, stringsAsFactors = T) #%>% dplyr::select(1,2,4)
+      
+    }
+      
+
+    })
+
+ # renderPrint(dat())
+  
+```
+
+
+# **Data read**
+```{r output data, echo=FALSE}
+
+renderPrint(str(dat()))
+
+
+  renderDataTable(dat(), extensions = 'Buttons', 
+                  options = list(dom = 'Bfrtip',
+                  buttons = c('copy', 'csv', 'excel', 'pdf', 'print')), server = FALSE)
+  
+  
+  
+
+inputPanel(
+  
+
+#textInput("x", "name of variable x", "available"),
+  
+selectInput("x", "Name of outcome variable:", choices=names(dat) ),
+
+
+#textInput("y", "name variable y", "missing"),
+
+selectInput("y", "Name of outcome variable:", choices=names(dat) ),
+
+#textInput("z", "name groupvariable z", "Centers"), 
+selectInput("z", "Name of grouping variable:", choices=names(dat) ),
+
+
+
+)
+  
+  
+x <- renderText({ input$x })
+y <- renderText({ input$y })
+z <- renderText({ input$z })
+
+
+ observeEvent(dat(), {
+                   updateSelectInput(session,
+                                     "x",
+                                     choices = names(dat()) , selected = "available")
+                   updateSelectInput(session,
+                                     "y",
+                                     choices = names(dat()),  selected = "missing")
+                     updateSelectInput(session,
+                                     "z",
+                                     choices = names(dat()), selected = "Centers")
+                     })
+
+ 
+    
+```
+
+
+# **Simultaneous confidence intervals for contrasts of `r reactive(z())` means with GM for given data set**
+
+```{r output_comparison, echo=FALSE}
+
+
+ table_out <- reactive({binomial_outcome_table(x=x(), y=y(), group=z(), df=dat())
+})
+
+
+renderDataTable(table_out(), extensions = 'Buttons', 
+                  options = list(dom = 'Bfrtip',
+                  buttons = c('copy', 'csv', 'excel', 'pdf', 'print')), server = FALSE)
+  
+
+plot <- reactive({
+     binomial_outcome(x=x(), y=y(), group=z(), df=dat())
+  
+  
+})
+
+
+renderPlot(plot())
+
+
+```
+
+
