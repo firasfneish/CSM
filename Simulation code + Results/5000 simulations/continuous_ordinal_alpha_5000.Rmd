@@ -1,0 +1,386 @@
+---
+title: "CSM Comparison to Grand mean"
+#author: "Firas Fneish"
+#date: "6/4/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+# Results {.tabset}
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+Packages <- c("tidyverse", "multcomp", "arm", "brglm", "kableExtra", "ggpubr", "RColorBrewer")
+lapply(Packages, library, character.only = TRUE)
+
+```
+
+
+```{r Data_import, echo=FALSE, message=FALSE, warning=FALSE}
+
+setwd("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/Manuscript/Therapeutic Innovation & Regulatory Science/Resubmission/5000 simulations")
+
+#dir() %>% data.frame() %>% mutate(lm=grepl('lm', `.`)) %>% filter(lm==TRUE)
+#################################################################################################################################
+#################################################################################################################################
+########################################### ALPHA ###############################################################################
+#################################################################################################################################
+#################################################################################################################################
+
+##### Balanced
+nparcomp_balanced_alpha <- read.csv2("lm_nparcomp balanced alpha_5000.csv")
+ordinal_nparcomp_balanced_alpha <- read.csv2("nparcom ordinal alpha_5000_balanced.csv")
+
+##### Unbalanced
+
+
+nparcomp_unbalanced_alpha <- read.csv2("lm_nparcomp unbalanced alpha_5000.csv")
+nparcomp_ordinal_unbalanced_alpha <- read.csv2("nparcom ordinal unbalanced alpha_5000.csv")
+
+
+
+
+
+
+
+# xaxislabel=50
+# yaxislabel=50
+# titleyaxis=60
+# titlexaxis=50
+# points_size=20
+# order_legend=52
+# legend.text=40
+
+# xaxislabel=70
+# yaxislabel=70
+# titleyaxis=90
+# titlexaxis=80
+# points_size=20
+# order_legend=52
+# legend.text=40
+
+
+xaxislabel=100
+yaxislabel=100
+titleyaxis=130
+titlexaxis=120
+points_size=30
+order_legend=52+30
+legend.text=45
+
+hline=3
+```
+
+
+
+
+
+## **Continuous** {.tabset}
+
+### **alpha** {.tabset}
+
+#### **Balanced**
+```{r echo=FALSE, fig.height=6, fig.width=8, message=FALSE, warning=FALSE}
+
+
+
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Accent")))
+sc <- scale_colour_gradientn(colours = myPalette(100), limits=c(0,3.5), breaks=c(0.2,1.5,2.5),
+                             name=expression(delta))
+
+
+gg_nparcomp_alpha_balanced <- nparcomp_balanced_alpha %>% pivot_longer(names_to = "Method", values_to="est.alpha", c(est.alpha_lm, est.alpha_nparcomp)) %>% mutate(Method= case_when(Method== "est.alpha_lm" ~ "Linear Model", Method=="est.alpha_nparcomp"~"Non-parametric")) %>% 
+  ggplot(aes(factor(n1, levels = c(3,5,10,20,40,50,80,100,200)), est.alpha))+theme_bw()+  geom_point(position=position_jitter(width=0,height=0), size=points_size)+
+  theme(axis.text.x = element_text(angle=0) ) +geom_hline(yintercept=0.05,  linetype="solid", 
+                                                           color = "red", size=hline)+theme(strip.text = element_text(size=19), 
+                                                                                axis.text.x = element_text(size = xaxislabel),
+                                                                                axis.text.y = element_text(size = yaxislabel))+ #ggtitle("Unbalanced")+
+  scale_shape_manual(values=c(1:16), name=expression(bold(n[i] ~ "in deviating center")))+
+  labs(y = expression(alpha))+
+  theme(legend.title = element_text(size=legend.text+10), legend.text = element_text(size=legend.text+10), axis.title.y = element_text(size=30), axis.title.x = element_text(size=19))+
+  #ggtitle("Continuous") +
+  theme(plot.title = element_text(hjust = 0.5, size=30))+ geom_line(aes(group=Method, linetype=Method, color=Method), size=1.5)+ xlab(expression(bold(n[i] ~ "per center")))+theme(axis.title.y = element_text(size = titleyaxis), 
+                                                               axis.title.x = element_text(size = titlexaxis), 
+                                                               legend.position = "bottom")+  guides(linetype=guide_legend(keywidth = 13, keyheight = 10) )+
+  guides(linetype=guide_legend(keywidth = 10, keyheight = 15,  title.theme = element_text(size = 110, face = "bold"), label.theme = element_text(size=110)))+
+  geom_hline(yintercept=0.044,  linetype="dashed", color="blue", size=hline)+
+  geom_hline(yintercept=0.056,  linetype="dashed", color="blue", size=hline)#+ scale_x_continuous(breaks =nparcomp_balanced_alpha$n1)#+facet_wrap(~Method)
+
+
+gg_nparcomp_alpha_balanced
+
+
+#setwd("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/graphs")
+#ggexport(gg_nparcomp_alpha_balanced, filename = "nparcomp_alpha_balanced.png", width = 1000,   height = 800)
+
+
+
+```
+
+#### **Unbalanced**
+
+```{r echo=FALSE, fig.height=10, fig.width=14, message=FALSE, warning=FALSE}
+
+
+
+
+
+####
+
+gg_nparcomp_unbalanced_alpha <- nparcomp_unbalanced_alpha %>% pivot_longer(names_to = "Method", values_to="est.alpha", c(est.alpha_lm, est.alpha_nparcomp)) %>% mutate(Method= case_when(Method== "est.alpha_lm" ~ "Linear Model", Method=="est.alpha_nparcomp"~"Non-parametric")) %>% 
+      mutate(n1=factor(n1, levels = factor(unique(sort(nparcomp_unbalanced_alpha$n1))) ), 
+         n2=factor(n2, levels = factor(unique(sort(nparcomp_unbalanced_alpha$n2))) )) %>%  
+  ggplot(aes(factor(n1, levels = c(6,10,20,40,80,100,160,200,400)), est.alpha))+theme_bw()+  geom_point(position=position_jitter(width=0,height=0), aes(shape=(n2), stroke=2), size=points_size)+
+  theme(axis.text.x = element_text(angle=0) ) +geom_hline(yintercept=0.05, linetype="solid", 
+                                                           color = "red", size=hline)+theme(strip.text = element_text(size=19), 
+                                                                                axis.text.x = element_text(size = xaxislabel),
+                                                                                axis.text.y = element_text(size = yaxislabel))+ #ggtitle("Unbalanced")+
+  scale_shape_manual(values=c(1:16), name=expression(bold(n[i] ~ "in unbalanced center")))+
+  labs(y = expression(alpha))+
+  theme(legend.title = element_text(size=legend.text+40), legend.text = element_text(size=legend.text+40), axis.title.y = element_text(size=30))+
+  ggtitle("") +
+  theme(axis.title.x = element_text(size=19),plot.title = element_text(hjust = 0.5, size=30))+ geom_line(aes(group=Method, linetype=Method, color=Method), size=1.5)+theme(legend.position="bottom")+xlab(expression(bold(n[i] ~ "per center")))+#ggtitle("Continuous")
+theme(axis.title.y = element_text(size = titleyaxis),  axis.title.x = element_text(size = titlexaxis))+theme(legend.spacing = unit(10, unit="cm"))+  guides(linetype=guide_legend(keywidth = 5, direction = "vertical") ) +
+guides(color = FALSE) + geom_hline(yintercept=0.044,  linetype="dashed", color="blue", size=hline)+
+  geom_hline(yintercept=0.056,  linetype="dashed", color="blue", size=hline)   #+   scale_x_continuous(breaks =nparcomp_unbalanced_alpha$n1)
+#+facet_wrap(~Method)
+
+
+gg_nparcomp_unbalanced_alpha
+
+
+#setwd("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/graphs")
+#ggexport(gg_nparcomp_unbalanced_alpha, filename = "nparcomp_unbalanced_alpha.png", width = 1250,   height = 900)
+
+
+
+
+```
+
+
+## **Ordinal** {.tabset}
+
+
+### **alpha** {.tabset}
+
+#### **Balanced**
+
+```{r echo=FALSE, fig.height=10, fig.width=14, message=FALSE, warning=FALSE}
+
+
+ordinal_nparcomp_balanced_alpha <-  ordinal_nparcomp_balanced_alpha %>% mutate(n=factor(n, levels = c("3", "5", "10", "20", "40", "50", 
+                                                                                                              "80", "100", "200")))
+
+
+gg_ordinal_alpha_balanced  <- ordinal_nparcomp_balanced_alpha %>%  ggplot(aes(n, est.alpha))+  
+  geom_point(position=position_jitter(width=0.,height=0), size=points_size)+
+  
+  theme_bw()+
+   theme(axis.text.x = element_text(angle=0, size = xaxislabel) , axis.text.y = element_text(size =yaxislabel),  axis.title.y = element_text(size =19), 
+         axis.title.x =  element_text(size =19)) +
+   geom_hline(yintercept=0.05, linetype="solid",   color = "red", size=hline)+ ylab("Type I error ")+ xlab(expression(bold(n[i] ~ "per center")))+
+  scale_y_continuous(breaks=c(0.05,0.08,0.12,0.15,0.18, 0.20))+ guides( size = FALSE)+
+    labs(y = expression(alpha))+
+    theme(legend.title = element_text(size=legend.text+10), axis.title.y = element_text(size=30), legend.text = element_text(size=legend.text+10))+
+  #ggtitle("Ordinal") +
+  theme(plot.title = element_text(hjust = 0.5, size=30))+theme(axis.title.y = element_text(size = titleyaxis), 
+                                                               axis.title.x = element_text(size = titlexaxis))+geom_line(aes(group=1), size=1.5)+
+  geom_hline(yintercept=0.044,  linetype="dashed", color="blue", size=hline)+
+  geom_hline(yintercept=0.056,  linetype="dashed", color="blue", size=hline)
+ 
+
+gg_ordinal_alpha_balanced 
+
+
+#setwd("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/graphs")
+#ggexport(gg_ordinal_alpha_balanced, filename = "ordinal_alpha_balanced.png", width = 1000,   height = 800)
+ 
+ 
+```
+
+#### **Unbalanced**
+```{r echo=FALSE, fig.height=10, fig.width=14, message=FALSE, warning=FALSE}
+
+
+ 
+ 
+nparcomp_ordinal_unbalanced_alpha <- nparcomp_ordinal_unbalanced_alpha %>% 
+   mutate(n1=factor(n1, levels = factor(unique(sort(nparcomp_unbalanced_alpha$n1))) ), 
+         n2=factor(n2, levels = factor(unique(sort(nparcomp_unbalanced_alpha$n2))) ))
+  
+gg_ordinal_alpha_unbalanced <- nparcomp_ordinal_unbalanced_alpha %>% mutate(est.alpha=as.numeric(as.character((est.alpha)))) %>% 
+   ggplot(aes(n1, est.alpha))+theme_bw()+  geom_point(position=position_jitter(width=0.0,height=0), aes(shape=n2, stroke=2), size=points_size)+
+    theme(axis.text.x = element_text(angle=0, size=xaxislabel), 
+          axis.text.y = element_text(angle=0, size=yaxislabel)) +geom_hline(yintercept=0.05, linetype="solid", 
+                            color = "red", size=hline)+theme(strip.text = element_text(size=19), 
+                      axis.text.y = element_text(size = yaxislabel))+ #ggtitle("Unbalanced")+
+    scale_shape_manual(values=c(1:16), name=expression(bold(n[i] ~ "in unbalanced center")))+ xlab(expression(bold(n[i] ~ "per center")))+
+     theme( 
+        legend.text = element_text(size = legend.text+30+10), 
+        title=element_text(size=17))+
+      labs(y = expression(alpha))+
+    theme(legend.title = element_text(size=50+50), axis.title.y = element_text(size=30))+
+  ggtitle("") +
+  theme(plot.title = element_text(hjust = 0.5, size=30))+theme(legend.position="bottom")+theme(axis.title.y = element_text(size = titleyaxis), 
+                                                               axis.title.x = element_text(size = titlexaxis))+theme(legend.spacing = unit(10, unit="cm"))+geom_line(aes(group=1), size=1.5)+geom_hline(yintercept=0.044,  linetype="dashed", color="blue", size=hline)+
+  geom_hline(yintercept=0.056,  linetype="dashed", color="blue", size=hline)#+ggtitle("Ordinal")
+ 
+ 
+gg_ordinal_alpha_unbalanced
+
+
+
+#setwd("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/graphs")
+#ggexport(gg_ordinal_alpha_unbalanced, filename = "ordinal_alpha_unbalanced.png", width = 1250,   height = 900)
+
+
+```
+
+
+
+
+
+
+
+## **Sum up1** {.tabset}
+
+
+### **alpha**
+```{r echo=FALSE, fig.height=20, fig.width=22}
+
+ls <- ls() %>% as.data.frame() %>% mutate(alpha=case_when(grepl('alpha', `.`) & grepl('gg', `.`) ~ "alpha", 
+                                                    grepl('power', `.`) & grepl('gg', `.`) ~ "power" )   )
+
+alpha <- ggarrange(
+
+
+
+ggarrange(gg_nparcomp_alpha_balanced ,
+
+        #gg_nparcomp_alpha_unbalanced ,
+        gg_nparcomp_unbalanced_alpha,
+
+          nrow=1,  #legend="bottom" ,
+        labels=c("(C)", "(D)")  ,  font.label=list(color="black",size=order_legend)
+
+    ) %>% annotate_figure( top = text_grob("Continuous",
+               color = "red", face = "bold", size = 60)),
+
+
+
+
+ggarrange(gg_ordinal_alpha_balanced ,
+
+        gg_ordinal_alpha_unbalanced ,
+
+          nrow=1 ,  #legend="bottom",
+        labels=c("E", "F")  ,  font.label=list(color="black",size=order_legend)
+
+    ) %>% annotate_figure( top = text_grob("Ordinal",
+               color = "red", face = "bold", size = 60)),
+nrow = 3
+
+)
+alpha
+
+
+# 
+# 
+# tiff("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/up/alpha_tiff.tiff",   width=3500, height=1800, res=36)
+# ggarrange(
+# ggarrange(gg_binomial_alpha_balanced + theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")), 
+#         
+#         gg_binomial_alpha_unbalanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")) , 
+#     
+#        nrow=1,  legend="bottom" , 
+#        labels=c("A", "B")  ,  font.label=list(color="black",size=order_legend) # , hjust = c(2,2)
+#      
+#     ) %>% annotate_figure( top = text_grob("Binomial", 
+#                color = "red", face = "bold", size = 60)),
+# 
+# 
+# 
+# ggarrange(gg_nparcomp_alpha_balanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")), 
+#         
+#         #gg_nparcomp_alpha_unbalanced , 
+#         gg_nparcomp_unbalanced_alpha+theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")),
+#     
+#           nrow=1,  #legend="bottom" ,
+#         labels=c("C", "D")  ,  font.label=list(color="black",size=order_legend)
+#      
+#     ) %>% annotate_figure( top = text_grob("Continuous", 
+#                color = "red", face = "bold", size = 60)),
+# 
+# 
+# 
+# 
+# ggarrange(gg_ordinal_alpha_balanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")), 
+#         
+#         gg_ordinal_alpha_unbalanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold")), 
+#     
+#           nrow=1 ,  #legend="bottom", 
+#         labels=c("E", "F")  ,  font.label=list(color="black",size=order_legend)
+#      
+#     ) %>% annotate_figure( top = text_grob("Ordinal", 
+#                color = "red", face = "bold", size = 60)),
+# nrow = 3
+# 
+# )
+# dev.off()
+
+
+
+
+# pdf("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/CSM simulation/results-graphs/dat_3/up/alpha1.pdf", 
+#     width = 160, height = 80)
+
+jpeg("C:/Users/FirasFneish/MS Forschungs- und Projektentwicklungs-gGmbH/MSFP-Statistik - Dokumente/CSM/Manuscript/Therapeutic Innovation & Regulatory Science/Resubmission/5000 simulations/alpha_jpeg_5000.jpeg",
+      res=50, width = 390, height = 195, units = "cm")
+
+
+ggarrange(
+
+
+
+ggarrange(gg_nparcomp_alpha_balanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold"), 
+                                             legend.title = element_text(face = "bold"), legend.text = element_text(face = "bold"), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")), 
+        
+        #gg_nparcomp_alpha_unbalanced , 
+        gg_nparcomp_unbalanced_alpha+theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold"), 
+                                             legend.title = element_text(face = "bold"), legend.text = element_text(face = "bold"), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")),
+    
+          nrow=1,  #legend="bottom" ,
+        labels=c("C", "D")  ,  font.label=list(color="black",size=order_legend)
+     
+    ) %>% annotate_figure( top = text_grob("Continuous", 
+               color = "black", face = "bold", size = 90)),
+
+
+
+
+ggarrange(gg_ordinal_alpha_balanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold"), 
+                                             legend.title = element_text(face = "bold"), legend.text = element_text(face = "bold"), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")), 
+        
+        gg_ordinal_alpha_unbalanced +theme(axis.text.x = element_text(color = "black", face="bold"), axis.text.y= element_text(color = "black", face = "bold"), 
+                                             legend.title = element_text(face = "bold"), legend.text = element_text(face = "bold"), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")), 
+    
+          nrow=1 ,  #legend="bottom", 
+        labels=c("E", "F")  ,  font.label=list(color="black",size=order_legend)
+     
+    ) %>% annotate_figure( top = text_grob("Ordinal", 
+               color = "black", face = "bold", size = 90)),
+nrow = 2
+
+)
+
+
+dev.off()
+
+
+```
+
+
