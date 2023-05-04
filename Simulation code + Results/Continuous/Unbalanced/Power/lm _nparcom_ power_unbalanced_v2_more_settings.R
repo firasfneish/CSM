@@ -189,41 +189,7 @@ fsimdat
 
 write.csv2(fsimdat, "lm_nparcomp unbalanced power_1000.csv")
 
-nparcomp_unbalanced_power <- fsimdat
-xaxislabel=10
-yaxislabel=10
-titleyaxis=5
-titlexaxis=5
-points_size=5
-order_legend=5
-legend.text=5
-hline=3
 
 
 
 
-
-gg_nparcomp_power_unbalanced <- nparcomp_unbalanced_power %>% pivot_longer(names_to = "Method", values_to="est.alpha", c(est.alpha_lm, est.alpha_nparcomp)) %>% mutate(Method= case_when(Method== "est.alpha_lm" ~ "Linear Model", Method=="est.alpha_nparcomp"~"Non-parametric")) %>%
-  mutate(n1=factor(n1, levels = factor(unique(sort(nparcomp_unbalanced_power$n1))) ), 
-         n2=factor(n2, levels = factor(unique(sort(nparcomp_unbalanced_power$n2))) )) %>% 
-  
-  ggplot(aes(n1, est.alpha))+theme_bw()+  
-  geom_point(position=position_jitter(width=0,height=0), aes(shape=(n2), stroke=2, color=d ), size=points_size)+
-  theme(axis.text.x = element_text(angle=0) ) +geom_hline(yintercept=0.8, linetype="dashed", 
-                                                          color = "red", size=hline)+theme(strip.text = element_text(size=19), 
-                                                                                           axis.text.x = element_text(size = xaxislabel),
-                                                                                           axis.text.y = element_text(size = yaxislabel))+ #ggtitle("Unbalanced")+
-  scale_shape_manual(values=c(1:16), name=expression(bold(n[i] ~ "in deviating center")))+
-  labs(y = expression(1-beta))+
-  theme(legend.title = element_text(size=legend.text+20+15+20, face = "bold"), legend.text = element_text(size=legend.text+50, face = "bold"), axis.title.y = element_text(size=30))+
-  ggtitle("") +
-  theme(plot.title = element_text(hjust = 0.5, size=30))+ geom_line(aes(group=Method, linetype=Method), size=1.5)+theme(axis.title.x = element_text(size=19), legend.position="bottom")+xlab(expression(bold(n[i] ~ "per center")))+theme(axis.title.y = element_text(size = titleyaxis), 
-                                                                                                                                                                                                                                          axis.title.x = element_text(size = titlexaxis))+theme(legend.spacing = unit(5, unit="cm"))+
-  scale_color_continuous(
-    limits=c(0,3.1), breaks=c(0.2, 1.5, 2.5),
-    guide = guide_colourbar(barwidth = 40, barheight = 8, order = 1,title.vjust = 1, label.theme = element_text(size = 65, face = "bold"), title.theme = element_text(size=150, face = "bold")), low="blue",  high="red",
-    name=expression(delta)) + scale_linetype_manual(values=c("solid", "dotted"))+   guides(linetype=guide_legend(keywidth = 5, direction = "vertical") )
-
-
-
-gg_nparcomp_power_unbalanced 
